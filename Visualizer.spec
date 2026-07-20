@@ -1,12 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_submodules
 from PyInstaller.utils.hooks import collect_all
 
 datas = []
 binaries = []
-hiddenimports = ['winrt.windows.media.control', 'winrt.windows.storage.streams', 'winrt.windows.foundation']
-hiddenimports += collect_submodules('winrt')
+hiddenimports = ['PyQt6', 'winrt.windows.media.control', 'winrt.windows.storage.streams', 'winrt.windows.storage', 'winrt.windows.foundation', 'winrt.windows.foundation.collections']
 tmp_ret = collect_all('soundcard')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('PyQt6')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('winrt')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
