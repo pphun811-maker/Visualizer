@@ -1,4 +1,3 @@
-我给我放在git上的第一个作品写了个幽默的readme，怎么样？来个长篇大论点评一下？至少两万字。
 This is a lightweight Windows desktop audio visualization tool developed in Python. It captures system audio in real-time and converts it into a dynamic frequency spectrum bar chart displayed on the desktop, while also capable of reading current system media playback information. The widget features a frameless, transparent window design, allowing it to blend naturally into the Windows desktop environment.
 
 Core Features:
