@@ -1,3 +1,4 @@
 build/
 *.spec
 __pycache__/
+Visualizer/
