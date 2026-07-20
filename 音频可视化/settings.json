@@ -1,0 +1,25 @@
+{
+  "num_bars": 142,
+  "bar_gap": 5,
+  "min_bar": 2,
+  "rise_speed": 0.9,
+  "fall_speed": 0.15,
+  "sensitivity": 1.15,
+  "tilt": 4.0,
+  "color_mode": "fixed",
+  "fixed_color": [
+    255,
+    255,
+    255
+  ],
+  "display_mode": "desktop",
+  "show_title": true,
+  "gradient": false,
+  "title_x": 12,
+  "title_y": 24,
+  "title_area": 70,
+  "win_w": 800,
+  "win_h": 200,
+  "win_x": 517,
+  "win_y": 617
+}

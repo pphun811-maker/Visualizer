@@ -1,0 +1,10 @@
+PyQt6
+soundcard
+numpy
+Pillow
+winrt-runtime
+winrt-Windows.Media.Control
+winrt-Windows.Storage.Streams
+winrt-Windows.Storage
+winrt-Windows.Foundation
+winrt-Windows.Foundation.Collections

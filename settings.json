@@ -1,0 +1,25 @@
+{
+  "num_bars": 160,
+  "bar_gap": 1,
+  "min_bar": 2,
+  "rise_speed": 0.9,
+  "fall_speed": 0.15,
+  "sensitivity": 1.15,
+  "tilt": 4.0,
+  "color_mode": "album",
+  "fixed_color": [
+    0,
+    200,
+    255
+  ],
+  "display_mode": "desktop",
+  "show_title": true,
+  "gradient": true,
+  "title_x": 12,
+  "title_y": 24,
+  "title_area": 70,
+  "win_w": 800,
+  "win_h": 200,
+  "win_x": 464,
+  "win_y": 484
+}
