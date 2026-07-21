@@ -14,26 +14,26 @@ import soundcard as sc
 warnings.filterwarnings("ignore")
 
 DEFAULTS = {
-    "num_bars":     160,
-    "bar_gap":      1,
+    "num_bars":     126,
+    "bar_gap":      5,
     "min_bar":      2,
-    "rise_speed":   0.90,
-    "fall_speed":   0.15,
-    "sensitivity":  1.15,
-    "tilt":         4.0,
-    "smooth_sigma": 1.0,
-    "color_mode":   "album",
-    "fixed_color":  [0, 200, 255],
-    "display_mode": "desktop",   # desktop=停在桌面 / top=置顶 / normal=普通
+    "rise_speed":   0.9,
+    "fall_speed":   0.14,
+    "sensitivity":  0.83,
+    "tilt":         7.1,
+    "smooth_sigma": 0.8,
+    "color_mode":   "fixed",
+    "fixed_color":  [255, 255, 255],
+    "display_mode": "normal",   # desktop=停在桌面 / top=置顶 / normal=普通
     "show_title":   True,
     "gradient":     True,
-    "title_x":      12,
-    "title_y":      24,
+    "title_x":      0,
+    "title_y":      222,
     "title_area":   70,
     "win_w":        800,
     "win_h":        200,
-    "win_x":        100,
-    "win_y":        700,
+    "win_x":        464,
+    "win_y":        755,
     "language":     "",          # 空 = 首次启动，将自动检测系统语言
 }
 
