@@ -484,6 +484,8 @@ class Visualizer(QtWidgets.QWidget):
         if CFG["display_mode"] == "top":
             flags |= QtCore.Qt.WindowType.WindowStaysOnTopHint
         self.setWindowFlags(flags)
+        # pin 状态：display_mode 为 top 时视为初始已固定
+        self._pinned = CFG["display_mode"] == "top"
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
         self.resize(CFG["win_w"], CFG["win_h"] + CFG["title_area"])
         self.move(CFG["win_x"], CFG["win_y"])
@@ -538,12 +540,16 @@ class Visualizer(QtWidgets.QWidget):
                  "QPushButton:hover{background:rgba(0,0,0,190);}")
         self.btn_min = QtWidgets.QPushButton("—", self)
         self.btn_close = QtWidgets.QPushButton("✕", self)
-        for b in (self.btn_min, self.btn_close):
+        self.btn_pin = QtWidgets.QPushButton("", self)
+        self.btn_pin.setIcon(self._make_pin_icon(self._pinned))
+        self.btn_pin.setIconSize(QtCore.QSize(14, 14))
+        for b in (self.btn_min, self.btn_close, self.btn_pin):
             b.setStyleSheet(style)
             b.resize(18, 18)
             b.hide()
         self.btn_min.clicked.connect(self.hide_to_tray)
         self.btn_close.clicked.connect(self.quit_app)
+        self.btn_pin.clicked.connect(self.toggle_pin)
         self._place_buttons()
 
     def _place_buttons(self):
@@ -552,6 +558,8 @@ class Visualizer(QtWidgets.QWidget):
         w = self.width()
         self.btn_close.move(w - 22, 4)
         self.btn_min.move(w - 44, 4)
+        if hasattr(self, "btn_pin"):
+            self.btn_pin.move(w - 66, 4)
 
     def resizeEvent(self, e):
         self._place_buttons()
@@ -560,11 +568,58 @@ class Visualizer(QtWidgets.QWidget):
         if hasattr(self, "btn_min"):
             self.btn_min.show()
             self.btn_close.show()
+            self.btn_pin.show()
 
     def leaveEvent(self, e):
         if hasattr(self, "btn_min"):
             self.btn_min.hide()
             self.btn_close.hide()
+            self.btn_pin.hide()
+
+    @staticmethod
+    def _make_pin_icon(pinned: bool) -> QtGui.QIcon:
+        """用 QPainter 绘制图钉图标，风格与关闭/最小化按钮一致。
+        pinned=True 时实心高亮白色，False 时半透明轮廓。"""
+        pm = QtGui.QPixmap(18, 18)
+        pm.fill(QtCore.Qt.GlobalColor.transparent)
+        p = QtGui.QPainter(pm)
+        p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
+        alpha = 235 if pinned else 145
+        col = QtGui.QColor(255, 255, 255, alpha)
+        pen = QtGui.QPen(col, 1.4, QtCore.Qt.PenStyle.SolidLine,
+                         QtCore.Qt.PenCapStyle.RoundCap,
+                         QtCore.Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
+        # 图钉帽：顶部横向椭圆（实心）
+        p.setBrush(col)
+        p.drawEllipse(QtCore.QRectF(3.5, 1.5, 11, 5.5))
+        # 针杆：从帽底中心垂直向下
+        p.setBrush(QtCore.Qt.BrushStyle.NoBrush)
+        p.drawLine(QtCore.QPointF(9, 7.2), QtCore.QPointF(9, 14.5))
+        # 针尖横线（图钉插底后外露的横挡）
+        p.drawLine(QtCore.QPointF(6.0, 14.5), QtCore.QPointF(12.0, 14.5))
+        p.end()
+        return QtGui.QIcon(pm)
+
+    def _update_pin_icon(self):
+        """刷新 pin 按钮图标以反映当前固定状态。"""
+        if hasattr(self, "btn_pin"):
+            self.btn_pin.setIcon(self._make_pin_icon(self._pinned))
+
+    def toggle_pin(self):
+        """切换窗口置顶固定状态（不修改 display_mode 配置）。"""
+        self._pinned = not self._pinned
+        self._update_pin_icon()
+        flags = self.windowFlags()
+        if self._pinned:
+            flags |= QtCore.Qt.WindowType.WindowStaysOnTopHint
+        else:
+            flags &= ~QtCore.Qt.WindowType.WindowStaysOnTopHint
+        # Qt 在 Windows 上更改 window flags 会隐藏窗口，需手动重新显示
+        self.setWindowFlags(flags)
+        self.show()
+        if not self._pinned and CFG["display_mode"] == "desktop":
+            self.lower()
 
     def _make_tray(self):
         icon = self.style().standardIcon(
