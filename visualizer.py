@@ -169,6 +169,7 @@ class AudioThread(QtCore.QThread):
         super().__init__()
         self.num_bars = num_bars
         self.running = True
+        self.active = True          # 隐藏到托盘时置 False，暂停 FFT 处理
         self.smoothed = np.zeros(num_bars)
         self.freqs = np.fft.rfftfreq(FFT_SIZE, 1.0 / SAMPLE_RATE)
         self.bar_freqs = np.logspace(np.log10(45), np.log10(16000), num_bars)
@@ -194,6 +195,10 @@ class AudioThread(QtCore.QThread):
         self.sigma = sigma
         self._build_kernel()
 
+    def set_active(self, active):
+        """窗口显示/隐藏时切换。隐藏时暂停整套 FFT 流水线以省 CPU。"""
+        self.active = active
+
     def run(self):
         try:
             spk = sc.default_speaker()
@@ -203,13 +208,27 @@ class AudioThread(QtCore.QThread):
             return
         buffer = np.zeros(FFT_SIZE)
         window = np.hanning(FFT_SIZE)
+        SILENCE = 1e-4              # 峰值低于此值判定为静音
         with loop.recorder(samplerate=SAMPLE_RATE, blocksize=CHUNK) as rec:
             while self.running:
                 try:
                     data = rec.record(numframes=CHUNK)
                 except Exception:
                     continue
+                # 隐藏到托盘：丢弃数据、音柱归零，跳过一切 FFT 计算
+                if not self.active:
+                    if self.smoothed.any():
+                        self.smoothed[:] = 0.0
+                    continue
                 mono = data.mean(axis=1)
+                # 静音检测：无声时跳过整套 FFT 流水线，仅让音柱自然衰减到 0，
+                # 完全归零后连衰减都省掉，CPU 几乎回落到空转水平
+                if np.abs(mono).max() < SILENCE:
+                    if self.smoothed.max() > 0.001:
+                        self.smoothed *= (1.0 - CFG["fall_speed"])
+                    else:
+                        self.smoothed[:] = 0.0
+                    continue
                 n = len(mono)
                 if n >= FFT_SIZE:
                     buffer[:] = mono[-FFT_SIZE:]
@@ -244,6 +263,14 @@ class MediaThread(QtCore.QThread):
     def __init__(self):
         super().__init__()
         self.running = True
+        self.active = True          # 隐藏到托盘时置 False，放宽轮询间隔
+        self._last_title = None     # 上次已 emit 的歌名，用于去重
+        self._art_title = None      # 上次成功解码封面对应的歌名
+        self._art_mode = None       # 上次解码时的颜色模式
+
+    def set_active(self, active):
+        """窗口显示/隐藏时切换，隐藏时降低轮询频率。"""
+        self.active = active
 
     def run(self):
         import asyncio
@@ -262,12 +289,16 @@ class MediaThread(QtCore.QThread):
         while self.running:
             try:
                 color, title = loop.run_until_complete(self._fetch())
-                self.title_ready.emit(title)
+                # 歌名未变则不 emit，避免每秒把窗口标记为 dirty 触发无谓重绘
+                if title != self._last_title:
+                    self._last_title = title
+                    self.title_ready.emit(title)
                 if color:
                     self.color_ready.emit(*color)
             except Exception as e:
                 print("[媒体] 出错:", e)
-            self.msleep(1000)
+            # 显示时 1s 轮询保证跟手，隐藏到托盘时放宽到 3s 进一步省电
+            self.msleep(1000 if self.active else 3000)
 
     async def _fetch(self):
         MM = self._MM
@@ -284,7 +315,14 @@ class MediaThread(QtCore.QThread):
         text = f"{artist} — {title}" if artist else title
 
         color = None
-        if CFG["color_mode"] == "album" and props.thumbnail is not None:
+        mode = CFG["color_mode"]
+        # 仅在 album 模式、且换歌或刚切到 album 模式时才解码封面，
+        # 避免同一首歌每秒用 PIL 重复解码同一张图，显著降低静默 CPU
+        need_decode = (mode == "album" and props.thumbnail is not None
+                       and (text != self._art_title or self._art_mode != "album"))
+        if mode != "album":
+            self._art_mode = mode
+        if need_decode:
             try:
                 stream = await props.thumbnail.open_read_async()
                 buf = Buffer(stream.size)
@@ -305,6 +343,9 @@ class MediaThread(QtCore.QThread):
                     sel = arr[mask] if mask.sum() > 10 else arr
                     col = (sel.mean(0) * 255).astype(int)
                     color = tuple(int(x) for x in col)
+                # 记录本次解码对应的歌名与模式，供下一轮去重判断
+                self._art_title = text
+                self._art_mode = "album"
             except Exception:
                 pass
         return (color, text)
@@ -563,6 +604,26 @@ class Visualizer(QtWidgets.QWidget):
 
     def resizeEvent(self, e):
         self._place_buttons()
+
+    def hideEvent(self, e):
+        """隐藏到托盘：停掉 60Hz 重绘定时器并暂停音频 FFT，CPU 接近归零。"""
+        if hasattr(self, "timer"):
+            self.timer.stop()
+        if hasattr(self, "audio"):
+            self.audio.set_active(False)
+        if hasattr(self, "media"):
+            self.media.set_active(False)
+        super().hideEvent(e)
+
+    def showEvent(self, e):
+        """从托盘恢复：重启重绘定时器并恢复音频处理。"""
+        if hasattr(self, "timer") and not self.timer.isActive():
+            self.timer.start(16)
+        if hasattr(self, "audio"):
+            self.audio.set_active(True)
+        if hasattr(self, "media"):
+            self.media.set_active(True)
+        super().showEvent(e)
 
     def enterEvent(self, e):
         if hasattr(self, "btn_min"):
