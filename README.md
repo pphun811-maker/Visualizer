@@ -8,4 +8,34 @@ Core Features:
 
 Note: As this widget relies heavily on high-frequency Desktop Window Manager (DWM) refreshes and consumes significant GPU resources, please close the widget when running games to prevent potential game crashes caused by VRAM overflow.
 
+Project structure (refactored from a single visualizer.py into a package):
+
+    visualizer/
+      __main__.py           entry point (python -m visualizer)
+      app.py                QApplication bootstrap
+      config.py             settings load/save (settings.json)
+      constants.py          shared geometry / bar constants
+      i18n.py               translations and system language detection
+      core/
+        audio_thread.py     WASAPI loopback capture + FFT
+        media_thread.py     Windows media session polling
+      ui/
+        main_window.py      frameless transparent overlay widget
+        settings_dialog.py  settings panel
+        icons.py            button icon rendering
+    Visualizer.spec         PyInstaller build recipe
+    requirements.txt        runtime dependencies
+
+Running from source:
+
+    pip install -r requirements.txt
+    python -m visualizer
+
+Building a standalone bundle:
+
+    pyinstaller Visualizer.spec
+
+Settings are stored in settings.json next to the script (or next to the .exe
+when frozen); it is created on first run and is not tracked by git.
+
 For any feedback or suggestions, please contact me via email at pengyuc14@gmail.com.

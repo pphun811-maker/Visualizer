@@ -1,4 +1,17 @@
-build/
-*.spec
+# Python bytecode / caches
 __pycache__/
-Visualizer/
+*.py[cod]
+
+# PyInstaller build output.
+# NOTE: do NOT add a bare "Visualizer/" rule here. Git on Windows/macOS matches
+# paths case-insensitively (core.ignorecase=true), so "Visualizer/" would also
+# match the "visualizer/" source package and silently exclude all source code.
+# The onedir COLLECT target already lands in dist/, which is ignored below.
+build/
+dist/
+
+# Runtime config (created on first run)
+settings.json
+
+# Locally built release artifacts
+*.exe
