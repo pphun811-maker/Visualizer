@@ -1,3 +1,5 @@
+English | [简体中文](README.zh-CN.md)
+
 # Visualizer
 
 A small desktop audio spectrum widget for Windows, written in Python with PyQt6. It captures whatever your PC is currently playing (speaker loopback), runs an FFT on it, and draws the result as a row of frequency bars in a frameless, translucent window sitting on the desktop. If a player exposes its state through Windows' media controls, the widget can also show the track title and tint the bars using the album art.
